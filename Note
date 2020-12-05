@@ -1,0 +1,30 @@
+--- TIMER REGISTERS ---
+
+Disable Timer before changing the prescaler:
+TIMGn_Tx_EN
+
+Prescaler Register
+TIMGn_Tx_DIVIDER
+
+Timer counter direction Register
+TIMGn_Tx_INCREASE
+
+Set new counter value should be incremented each interupt handling
+TIMGn_Tx_LOAD_HI
+
+Before reading the value from the timer this register should be set
+TIMGn_TxUPDATE_REG
+
+Timer counter value registers (32bit each)
+TIMGn_TxHI_REG
+TIMGn_TxLO_REG
+
+TIMGn_Tx_EN = 1
+TIMGn_Tx_INCREASE = 1
+TIMGn_Tx_AUTORELOAD = 0
+TIMGn_Tx_DIVIDER = 1024
+TIMGn_Tx_EDGE_INT_EN = 0
+TIMGn_Tx_LEVEL_INT_EN = 0
+TIMGn_Tx_ALARM_EN  = 0
+
+110 0000010000000000 000  0000000000
