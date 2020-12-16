@@ -44,7 +44,6 @@
 #define TIMER_ENABLE (1 << 31)
 
 volatile uint32_t *config_register = (volatile uint32_t *)TIM_G0_T0_CONFIG_REGISTER;
-volatile uint32_t *counter_reload_register = (volatile uint32_t *)TIM_G0_T0_LOAD_REGISTER;
 xQueueHandle timer_queue;
 
 typedef struct
@@ -54,36 +53,25 @@ typedef struct
 
 void IRAM_ATTR alarm_handler(void *args)
 {
-  timer_spinlock_take(0);
   timer_event evt;
 
-  // ToDo:
-  // 1. disable interrupt for the timer
-  // 2. change alarm value
-  // 3. send counter value to the queue
-  // 4. enable interrupt
-
+  // clear interrupt status bit
   volatile uint32_t *interrupt_clear_register = (volatile uint32_t *)TIM_G0_INT_CLR_REGISTER;
   *(interrupt_clear_register) |= TO_ITR_STATUS;
 
-  // *(config_register) |= LEVEL_INTERRUPT_DISABLE;
-  // *(config_register) |=ALARM_DISABLE;
-  // *(counter_reload_register) |= 1;
-
+  // get the counter value
   volatile uint32_t *counter_update_register = (volatile uint32_t *)TIM_G0_T0_UPDATE_REGISTER;
   volatile uint32_t *counter_hi_register = (volatile uint32_t *)TIM_G0_T0_HI_REGISTER;
   volatile uint32_t *counter_low_register = (volatile uint32_t *)TIM_G0_T0_LO_REGISTER;
   *(counter_update_register) = 1;
-
   evt.timer_counter = *(counter_hi_register) | *(counter_low_register);
+  
+  // send counter value to the queue
   xQueueSendFromISR(timer_queue, &evt, NULL);
 
+  // reenable alarm since it's disabled after the alarm
   volatile uint32_t *interrupt_set_register = (volatile uint32_t *)TIM_G0_INT_SET_REGISTER;
-  *(interrupt_set_register) |= TO_ITR_STATUS;
   *(config_register) |= ALARM_ENABLE;
-  // *(config_register) |= ALARM_ENABLE;
-  // *(config_register) |= LEVEL_INTERRUPT_ENABLE;
-  timer_spinlock_give(0);
 }
 
 void timer_event_handler(void *arg)
@@ -92,9 +80,7 @@ void timer_event_handler(void *arg)
   {
     timer_event evt;
     xQueueReceive(timer_queue, &evt, portMAX_DELAY);
-
-    printf("config register = %u\n", *(config_register));
-    printf("counter value == %llu\n", evt.timer_counter);
+    ESP_LOGI("TIMER", "tick");
   }
 }
 
@@ -129,7 +115,4 @@ void app_main(void)
   // start queue handler
   timer_queue = xQueueCreate(10, sizeof(timer_event));
   xTaskCreate(timer_event_handler, "timer_event_handler", 2048, NULL, 5, NULL);
-
-  uint32_t alarmValue = (uint32_t)(*(alarm_lo_register));
-  printf("alarm after star = %u\n", alarmValue);
 }
